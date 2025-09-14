@@ -4,12 +4,13 @@ import { v4 as uuidv4 } from "uuid";
 import { createOrderRequestSchema } from "../validations/dtos/createOrderRequest.dto";
 import { prisma } from "../utils/prismaClient";
 import { createOrder } from "../helpers/prisma/createOrder";
-import { getAllRestrauntOrders } from "../helpers/prisma/getAllOrdersByRestraunt";
+import { getAllOrdersByRestaurant } from "../helpers/prisma/getAllOrdersByRestraunt";
+import { emitToNearbyUsers, emitToUser } from "../ws/websocketServer";
 
-export const getAllRestrauntOrdersHandler = async (req: AuthRequest, res: Response) => {
+export const getAllRestaurantOrdersHandler = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     try {
-        const orders = await getAllRestrauntOrders(Number(id));
+        const orders = await getAllOrdersByRestaurant(Number(id));
         if (!orders) res.status(200).json({
             message: "error fetching orders of restaurant"
         })
@@ -118,14 +119,58 @@ export const createOrderHandler = async (req: AuthRequest, res: Response) => {
             ...orderData,
             userId: req.user.id,
             totalPrice,
-            status: "PENDING", // Will be set to CONFIRMED in service
+            status: "PENDING",
             token,
-            createdAt: (new Date()).toISOString(),
-        }, txHash); // ✅ pass txHash here
+            createdAt: new Date().toISOString(),
+        }, txHash);
 
         if (!createdOrder) {
             return res.status(500).json({ message: "Failed to create order" });
         }
+
+        //  1. Notifying nearby users about quantity update
+        emitToNearbyUsers(
+            foodOffer.latitude,
+            foodOffer.longitude,
+            [],
+            {
+                type: "FOOD_QUANTITY_UPDATED",
+                payload: {
+                    foodOfferId: foodOffer.id,
+                    foodName: foodOffer.foodName,
+                    remainingQty: foodOffer.remainingQty - orderData.quantity,
+                }
+            }
+        );
+
+        //  2. Notifying the restaurant owner
+        const restaurant = await prisma.restaurant.findUnique({
+            where: { id: foodOffer.restaurantId }
+        });
+
+        if (!restaurant) {
+            return res.status(200).json({ message: "Restaurant not found" });
+        }
+
+        if (restaurant.ownerId) {
+            emitToUser(restaurant.ownerId, {
+                type: "NEW_ORDER",
+                payload: {
+                    orderId: Number(createdOrder.id),
+                    message: `New order placed for your offer: ${foodOffer.foodName} Quantity: ${orderData.quantity}`,
+                    quantity: orderData.quantity,
+                }
+            });
+        }
+
+        //  3. Notifying the user (confirmation)
+        emitToUser(req.user.id, {
+            type: "ORDER_CONFIRMED",
+            payload: {
+                orderId: Number(createdOrder.id),
+                message: "Your order has been placed successfully! for id: " + createdOrder.id
+            }
+        });
 
         return res.status(201).json({
             message: "Order created successfully",

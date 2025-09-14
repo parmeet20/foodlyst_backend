@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/authMiddleware";
-import { createOrderHandler, getAllMyOrders, getAllRestrauntOrdersHandler } from "../controller/createOrderController";
+import { createOrderHandler, getAllMyOrders, getAllRestaurantOrdersHandler } from "../controller/createOrderController";
 
 const routes = Router();
 
 routes.get("/:id", authMiddleware, getAllMyOrders);
-routes.get("/restraunt/:id", getAllRestrauntOrdersHandler);
+routes.get("/restaurant/:id", getAllRestaurantOrdersHandler);
 routes.post("/create", authMiddleware, createOrderHandler);
 
 export default routes;

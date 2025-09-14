@@ -5,6 +5,7 @@ import { prisma } from "../utils/prismaClient";
 import { FoodOfferRequestSchema } from "../validations/foodOfferRequest.validation";
 import { createFoodOfferRequest } from "../helpers/prisma/createFoodOffer";
 import { findFoodOfferById } from "../helpers/prisma/foodOrder";
+import { emitToNearbyUsers } from "../ws/websocketServer";
 
 export const getFoodByOfferIdHadler = async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -25,7 +26,7 @@ export const getAllRestaurantFoodOffersByIdHandler = async (
     req: AuthRequest,
     res: Response
 ) => {
-    const { restrauntId } = req.params;
+    const { restaurantId } = req.params;
     if (!req.user) {
         return res.status(401).json({ message: "Unauthorized" });
     }
@@ -39,18 +40,18 @@ export const getAllRestaurantFoodOffersByIdHandler = async (
         }
 
         const restaurant = await prisma.restaurant.findUnique({
-            where: { id: Number(restrauntId) },
+            where: { id: Number(restaurantId) },
         });
 
         if (!restaurant || restaurant.ownerId !== userId) {
             return res.status(403).json({ message: "You do not own this restaurant" });
         }
 
-        const offers = await getAllOffersByRestaurant(Number(restrauntId));
+        const offers = await getAllOffersByRestaurant(Number(restaurantId));
 
         if (!offers) {
             return res.status(404).json({
-                message: `No offers found for restaurant ID ${restrauntId}`,
+                message: `No offers found for restaurant ID ${restaurantId}`,
             });
         }
 
@@ -58,7 +59,7 @@ export const getAllRestaurantFoodOffersByIdHandler = async (
     } catch (error) {
         console.error("Error fetching offers:", error);
         return res.status(500).json({
-            message: `Server error while fetching offers for restaurant ID ${restrauntId}`,
+            message: `Server error while fetching offers for restaurant ID ${restaurantId}`,
         });
     }
 };
@@ -89,6 +90,21 @@ export const createFoodOfferRequestHandler = async (req: AuthRequest, res: Respo
 
     if (!restaurant || restaurant.ownerId !== userId) {
         return res.status(403).json({ message: "You do not own this restaurant" });
+    }
+    if (restaurant.latitude && restaurant.longitude) {
+        emitToNearbyUsers(
+            restaurant.latitude,
+            restaurant.longitude,
+            [userId],
+            {
+                type: "NEW_OFFER",
+                payload: {
+                    restaurantId: restaurant.id,
+                    restaurantName: restaurant.name,
+                    message: `New food offer available at ${restaurant.name}`,
+                },
+            }
+        );
     }
 
     try {

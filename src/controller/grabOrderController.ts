@@ -32,7 +32,7 @@ export const getAllMyGrabbedOrdersHistoryHandler = async (req: AuthRequest, res:
     }
 };
 
-export const grabOrderFromRestrauntHandler = async (req: AuthRequest, res: Response) => {
+export const grabOrderFromRestaurantHandler = async (req: AuthRequest, res: Response) => {
     const { token } = req.params;
     const { rating } = req.body;
     try {
