@@ -1,0 +1,132 @@
+// Keep the existing generator and datasource
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  OWNER
+}
+
+enum FoodType {
+  VEG
+  NON_VEG
+  DESSERT
+  SNACK
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id                   Int                @id @default(autoincrement())
+  name                 String
+  email                String             @unique
+  password             String
+  walletAddress        String
+  walletConnected      Boolean
+  role                 Role               @default(USER)
+  balance              Float
+  Restaurant           Restaurant[]
+  FoodOfferRequest     FoodOfferRequest[]
+  GrabOffer            GrabOffer[]
+  Notification         Notification[]
+  Orders               FoodOrder[]        @relation("UserOrders")
+  transactionsReceived Transaction[]      @relation("transactionsReceived")
+  transactionsSent     Transaction[]      @relation("transactionsSent")
+}
+
+model Restaurant {
+  id            Int         @id @default(autoincrement())
+  name          String
+  email         String
+  contactNumber String
+  latitude      Float
+  longitude     Float
+  rating        Float
+  owner         User        @relation(fields: [ownerId], references: [id])
+  ownerId       Int
+  GrabOffer     GrabOffer[]
+  Orders        FoodOrder[] @relation("RestaurantOrders")
+}
+
+model FoodOfferRequest {
+  id            Int         @id @default(autoincrement())
+  foodName      String
+  type          FoodType
+  latitude      Float
+  longitude     Float
+  quantity      Int // Total quantity
+  remainingQty  Int // Real-time available qty
+  maxPerPerson  Int
+  perQtyPrice   Float
+  isActive      Boolean     @default(false) // True when discount starts
+  availableFrom DateTime? // Optional start time
+  availableTo   DateTime? // Optional end time
+  owner         User        @relation(fields: [restaurantId], references: [id])
+  restaurantId  Int
+  GrabOffer     GrabOffer[]
+  Orders        FoodOrder[]
+}
+
+model GrabOffer {
+  id                 Int              @id @default(autoincrement())
+  foodName           String
+  rating             Float
+  qtyTaken           Int
+  foodOffer          FoodOfferRequest @relation(fields: [foodOfferRequestId], references: [id])
+  foodOfferRequestId Int
+  restaurant         Restaurant       @relation(fields: [restaurantId], references: [id])
+  restaurantId       Int
+  user               User             @relation(fields: [userId], references: [id])
+  userId             Int
+}
+
+model FoodOrder {
+  id                 Int              @id @default(autoincrement())
+  user               User             @relation("UserOrders", fields: [userId], references: [id])
+  userId             Int
+  restaurant         Restaurant       @relation("RestaurantOrders", fields: [restaurantId], references: [id])
+  restaurantId       Int
+  foodOffer          FoodOfferRequest @relation(fields: [foodOfferRequestId], references: [id])
+  foodOfferRequestId Int
+  quantity           Int
+  totalPrice         Float
+  status             OrderStatus      @default(PENDING)
+  createdAt          DateTime         @default(now())
+  token              String           @unique
+  paymentId          String // From PayPal (external payment ref)
+  Transaction        Transaction[]
+}
+
+model Transaction {
+  id          Int        @id @default(autoincrement())
+  fromUser    User       @relation("transactionsSent", fields: [fromUserId], references: [id])
+  fromUserId  Int
+  toUser      User       @relation("transactionsReceived", fields: [toUserId], references: [id])
+  toUserId    Int
+  amountPaid  Int
+  txSignature String
+  order       FoodOrder? @relation(fields: [orderId], references: [id])
+  orderId     Int?
+  createdAt   DateTime   @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   Int
+  userId    Int
+  message   String
+  qty       Int
+  createdAt DateTime @default(now())
+}
