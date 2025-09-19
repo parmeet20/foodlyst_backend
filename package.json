@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "bun run src/main.ts"
+    "dev": "bun run src/main.ts",
+    "start": "bun run src/main.ts"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +19,7 @@
     "@types/morgan": "^1.9.10",
     "@types/ws": "^8.18.1",
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",

@@ -1,0 +1,16 @@
+FROM oven/bun:latest
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+  netcat-openbsd \
+  openssl
+
+COPY bun.lock package.json ./
+RUN bun install --production
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["bun", "run", "start"]

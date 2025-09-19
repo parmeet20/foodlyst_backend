@@ -13,9 +13,13 @@ import notificationRoutes from './routes/notificationsRoute';
 import { initWebSocketServer } from './ws/websocketServer';
 
 const app = express();
+app.use(express.json());
 const server = http.createServer(app);
 initWebSocketServer(server);
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}));
 app.use(morgan('tiny'));
 
 app.use(express.json());
@@ -28,3 +32,7 @@ app.use("/api/v1/transaction", transactionRoutes);
 app.use("/api/v1/notification", notificationRoutes);
 
 server.listen(ENV.PORT, () => console.log("\n[App running on port]: 8080\n"));
+
+// docker-compose down -v
+// docker-compose build --no-cache
+// docker-compose up

@@ -36,24 +36,27 @@ export const getRestaurantByIdHandler = async (req: Request, res: Response) => {
 }
 
 export const registerRestaurant = async (req: AuthRequest, res: Response) => {
-    const parsedRestaurant = RestaurantInputSchema.parse(req.body);
     try {
+        const parsedRestaurant = RestaurantInputSchema.parse(req.body);
+
         const userId = req.user?.id;
         const email = req.user?.email;
         const role = req.user?.role;
-        if (!userId) {
-            res.status(401).send("Unauthorized");
+
+        if (!userId || !email || role !== "OWNER") {
+            return res.status(401).send("Unauthorized: Invalid user credentials");
         }
-        const user = await userExists(req.user!?.email);
-        if (!user) {
-            res.status(401).send("Unauthorized");
+
+        const user = await userExists(email);
+        if (!user || user.role !== "OWNER") {
+            return res.status(403).send("Forbidden: Only owners can create a restaurant");
         }
-        if (!user || user.role !== "OWNER" || role !== "OWNER") {
-            res.status(401).send("you cannot create a restaurant");
-        }
-        const restaurant = await createRestaurant(email!, parsedRestaurant);
-        res.status(201).send(restaurant);
+
+        const restaurant = await createRestaurant(email, parsedRestaurant);
+        return res.status(201).json(restaurant);
+
     } catch (error) {
-        res.status(401).send("error creating restaurant");
+        console.error("Error creating restaurant:", error);
+        return res.status(500).send("Error creating restaurant");
     }
-}
+};

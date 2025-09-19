@@ -23,33 +23,23 @@ export const getFoodByOfferIdHadler = async (req: Request, res: Response) => {
 }
 
 export const getAllRestaurantFoodOffersByIdHandler = async (
-    req: AuthRequest,
+    req: Request,
     res: Response
 ) => {
     const { restaurantId } = req.params;
-    if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const userId = req.user.id;
-    const userRole = req.user.role;
 
     try {
-        if (userRole !== "OWNER") {
-            return res.status(403).json({ message: "Forbidden: Not a restaurant owner" });
-        }
-
         const restaurant = await prisma.restaurant.findUnique({
             where: { id: Number(restaurantId) },
         });
 
-        if (!restaurant || restaurant.ownerId !== userId) {
-            return res.status(403).json({ message: "You do not own this restaurant" });
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurant not found" });
         }
 
         const offers = await getAllOffersByRestaurant(Number(restaurantId));
 
-        if (!offers) {
+        if (!offers || offers.length === 0) {
             return res.status(404).json({
                 message: `No offers found for restaurant ID ${restaurantId}`,
             });

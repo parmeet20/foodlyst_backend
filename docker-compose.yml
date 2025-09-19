@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    container_name: food-order-app
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: mysql://root:password@mysql:3306/mydb
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        until nc -z mysql 3306; do echo 'Waiting for MySQL...'; sleep 2; done &&
+        bun x prisma generate &&
+        bun x prisma migrate dev --name init &&
+        bun run start
+      "
+
+  mysql:
+    image: mysql:latest
+    container_name: food-order-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: mydb
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
+    driver: bridge

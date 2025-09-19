@@ -13,6 +13,21 @@ import { connectWalletRequestSchema } from "../validations/dtos/connectWalletReq
 import { prisma } from "../utils/prismaClient";
 import { disconnectUserWallet } from "../helpers/prisma/disconnectUserWallet";
 
+export const getUserFromTokenHandler = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        const user = await getUserById(Number(userId));
+        if (!user) res.status(401).json({
+            message: "user not found"
+        })
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(401).json({
+            message: "error fetching user"
+        })
+    }
+}
+
 export const getUserByIdHandler = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     try {
