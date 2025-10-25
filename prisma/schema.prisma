@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgres"
   url      = env("DATABASE_URL")
 }
 
@@ -53,6 +53,7 @@ model Restaurant {
   contactNumber String
   latitude      Float
   longitude     Float
+  imageUrl      String
   rating        Float
   owner         User        @relation(fields: [ownerId], references: [id])
   ownerId       Int
@@ -64,6 +65,7 @@ model FoodOfferRequest {
   id            Int         @id @default(autoincrement())
   foodName      String
   type          FoodType
+  imageUrl      String
   latitude      Float
   longitude     Float
   quantity      Int // Total quantity

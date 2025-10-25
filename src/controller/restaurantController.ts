@@ -9,16 +9,29 @@ import { getRestaurantById } from "../helpers/prisma/getRestrauntById";
 export const getAllRestaurants = async (req: Request, res: Response) => {
     try {
         const restaurants = await prisma.restaurant.findMany();
-        const safeRestaurants = restaurants.map(r => ({
-            ...r,
-            contactNumber: r.contactNumber?.toString(),
-        }));
-        res.status(200).json(safeRestaurants);
 
+        const safeRestaurants = await Promise.all(
+            restaurants.map(async (r) => {
+                const owner = await prisma.user.findUnique({
+                    where: { id: r.ownerId },
+                    select: { walletAddress: true },
+                });
+
+                return {
+                    ...r,
+                    contactNumber: r.contactNumber?.toString(),
+                    walletAddress: owner?.walletAddress || null,
+                };
+            })
+        );
+
+        res.status(200).json(safeRestaurants);
     } catch (error) {
-        res.status(200).send("Error fetching restaurants");
+        console.error("Error fetching restaurants:", error);
+        res.status(500).send("Error fetching restaurants");
     }
-}
+};
+
 
 export const getRestaurantByIdHandler = async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -28,8 +41,16 @@ export const getRestaurantByIdHandler = async (req: Request, res: Response) => {
             res.status(200).json({
                 "message": "Restaurant not found with id:" + id
             })
-        }
-        res.status(200).send(restaurant);
+            return;
+        } const updatedRestaurant = {
+            ...restaurant,
+            walletAddress: await prisma.user.findUnique({
+                where: { id: restaurant.ownerId },
+                select: { walletAddress: true },
+            }).then(user => user?.walletAddress || null)
+        };
+
+        res.status(200).json(updatedRestaurant);
     } catch (error) {
         res.status(200).send("Error fetching restaurant");
     }

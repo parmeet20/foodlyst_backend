@@ -11,6 +11,7 @@ export const createFoodOfferRequest = async (offerRequest: FoodOfferRequest) => 
                 longitude: offerRequest.longitude,
                 quantity: offerRequest.quantity,
                 remainingQty: offerRequest.quantity,
+                imageUrl: offerRequest.imageUrl,
                 maxPerPerson: offerRequest.maxPerPerson,
                 perQtyPrice: Number(offerRequest.perQtyPrice),
                 isActive: false,

@@ -53,8 +53,46 @@ export const getAllRestaurantFoodOffersByIdHandler = async (
         });
     }
 };
+export const getAllOffersByLocationHandler = async (req: Request, res: Response) => {
+    try {
+        const { latitude, longitude } = req.params;
+        const userLat = parseFloat(latitude);
+        const userLon = parseFloat(longitude);
+
+        // Validate input
+        if (isNaN(userLat) || isNaN(userLon)) {
+            return res.status(400).json({ error: "Invalid latitude or longitude" });
+        }
+
+        // Function to calculate distance using Haversine formula
+        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        // Fetch all offers (assuming a database query)
+        const offers = await prisma.foodOfferRequest.findMany(); // Replace with actual DB query
+
+        // Filter offers within 50km
+        const nearbyOffers = offers.filter(offer => {
+            const distance = calculateDistance(userLat, userLon, offer.latitude, offer.longitude);
+            return distance <= 50;
+        });
 
 
+        return res.status(200).json(nearbyOffers);
+    } catch (error) {
+        console.error("Error fetching offers:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
 export const createFoodOfferRequestHandler = async (req: AuthRequest, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: "Unauthorized" });

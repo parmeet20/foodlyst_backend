@@ -5,6 +5,7 @@ import { FoodTypeSchema } from "./enums.validation";
 export const FoodOfferRequestSchema = z.object({
   id: z.number().int().optional(),
   foodName: z.string().min(1, "Food name is required"),
+  imageUrl: z.string(),
   type: FoodTypeSchema,
   latitude: z.number(),
   longitude: z.number(),

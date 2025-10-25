@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: food-order-app
+  namespace: food-order
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: food-order-app
+  template:
+    metadata:
+      labels:
+        app: food-order-app
+    spec:
+      containers:
+        - name: food-order-app
+          image: my-food-order-app:latest   # <-- your built image
+          imagePullPolicy: Never
+          env:
+            - name: DATABASE_URL
+              value: "mysql://root:password@mysql:3306/mydb"
+          ports:
+            - containerPort: 8080
+          command: ["sh", "-c"]
+          args:
+            - >
+              until nc -z mysql 3306;
+              do echo 'Waiting for MySQL...'; sleep 2;
+              done &&
+              bun x prisma generate &&
+              bun x prisma migrate dev --name init &&
+              bun run start
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-order-service
+  namespace: food-order
+spec:
+  selector:
+    app: food-order-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: NodePort   # so you can reach it via localhost

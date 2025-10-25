@@ -38,21 +38,20 @@ export const grabOrderFromRestaurantHandler = async (req: AuthRequest, res: Resp
     try {
         const order = await isOrderTokenValid(token);
         if (!order) {
-            return res.status(200).json({
+            return res.status(400).json({
                 message: "This token is not valid"
             });
         }
-        const grabbedOrder = await grabOrder(order!, rating);
+        const grabbedOrder = await grabOrder(order, rating);
         if (!grabbedOrder) {
-            res.status(200).json({
-                message: "order already grabbed"
+            return res.status(409).json({
+                message: "Order already grabbed"
             });
         }
-        console.log(grabbedOrder)
-        res.status(201).json(grabbedOrder)
+        res.status(201).json(grabbedOrder);
     } catch (error) {
-        res.status(200).json({
-            message: "error grabbing offer"
+        res.status(500).json({
+            message: "Error grabbing order"
         });
     }
-}
+};

@@ -22,6 +22,7 @@ export const initWebSocketServer = (server: any) => {
         const lat = parseFloat(params.get("lat") || "");
         const lng = parseFloat(params.get("lng") || "");
 
+        console.log("usr connected");
         if (!token || isNaN(lat) || isNaN(lng)) {
             ws.close(1008, "Unauthorized or invalid location");
             return;
@@ -105,13 +106,14 @@ export const emitToNearbyUsers = (
     data: WebSocketMessage
 ) => {
     const message = JSON.stringify(data);
+    console.log("called successfully")
 
     for (const [userId, clientList] of clients.entries()) {
         if (excludeUserIds.includes(userId)) continue;
 
         clientList.forEach(client => {
             const distance = getDistanceInKm(latitude, longitude, client.latitude, client.longitude);
-            if (client.role === "USER" && distance <= 5 && client.socket.readyState === WebSocket.OPEN) {
+            if (client.socket.readyState === WebSocket.OPEN) {
                 client.socket.send(message);
             }
         });

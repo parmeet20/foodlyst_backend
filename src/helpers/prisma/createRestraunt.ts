@@ -15,6 +15,7 @@ export const createRestaurant = async (
         const newRestaurant = await prisma.restaurant.create({
             data: {
                 name: restaurant.name,
+                imageUrl: restaurant.imageUrl,
                 email: restaurant.email,
                 contactNumber: restaurant.contactNumber,
                 latitude: restaurant.latitude,

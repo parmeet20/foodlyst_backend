@@ -15,6 +15,7 @@ export const getAllOffersByRestaurant = async (restaurantId: number): Promise<Fo
             foodName: offer.foodName,
             type: offer.type,
             latitude: offer.latitude,
+            imageUrl: offer.imageUrl,
             longitude: offer.longitude,
             quantity: offer.quantity,
             remainingQty: offer.remainingQty,
