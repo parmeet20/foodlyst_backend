@@ -17,7 +17,7 @@ app.use(express.json());
 const server = http.createServer(app);
 initWebSocketServer(server);
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: "https://foodlyst.vercel.app/",
     credentials: true
 }));
 app.use(morgan('tiny'));
